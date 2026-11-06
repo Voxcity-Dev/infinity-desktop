@@ -35,6 +35,20 @@ export function resolverEnderecoDoApp(opcoes: { dev: boolean; override?: string 
   return url.origin
 }
 
+// O anexo de uma conversa aberto em outra aba (Card VoxPlan #36028): só o id
+// inteiro, nada abaixo dele.
+const ANEXO_DO_CHAT = /^\/chat\/anexo\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * O "Abrir em nova aba" do anexo do chat vira uma janela do próprio app, com a
+ * sessão (decision board 06/11/2026, "Janela nova do app, já logada"). Só o
+ * endereço do anexo no site do app: o resto segue para o navegador do sistema.
+ */
+export function ehAnexoDoChat(url: string, enderecoDoApp: string): boolean {
+  const u = parse(url)
+  return !!u && ehDoApp(url, enderecoDoApp) && ANEXO_DO_CHAT.test(u.pathname)
+}
+
 /** A URL é do próprio site carregado na janela (mesma origem). */
 export function ehDoApp(url: string, enderecoDoApp: string): boolean {
   const u = parse(url)

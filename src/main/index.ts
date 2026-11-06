@@ -8,6 +8,7 @@ import { setupAutoUpdater } from './updater'
 import { setupStartup } from './startup'
 import { soDoApp } from './origem'
 import {
+  ehAnexoDoChat,
   ehDoApp,
   interpretarDeepLink,
   frontCarregadoDepois,
@@ -188,6 +189,24 @@ function createWindow(): void {
       }
     }
 
+    // O anexo do chat em outra janela, com a sessão do app (Card VoxPlan #36028).
+    if (ehAnexoDoChat(url, ENDERECO_DO_APP)) {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 1100,
+          height: 800,
+          autoHideMenuBar: true,
+          backgroundColor: FUNDO_VOX_MIDNIGHT,
+          webPreferences: {
+            contextIsolation: true,
+            nodeIntegration: false,
+            sandbox: true,
+          },
+        },
+      }
+    }
+
     // tel: links — send to renderer so softphone can handle them
     if (url.startsWith('tel:')) {
       const link = interpretarDeepLink(`infinity://call/${url.slice(4)}`)
@@ -197,6 +216,23 @@ function createWindow(): void {
 
     abrirFora(url)
     return { action: 'deny' }
+  })
+
+  // A janela do anexo fica no site como a principal: link e popup de dentro dela
+  // vão para o navegador do sistema, nunca para outra janela do Electron.
+  mainWindow.webContents.on('did-create-window', (janela, { url }) => {
+    if (!ehAnexoDoChat(url, ENDERECO_DO_APP)) return
+    janela.webContents.setWindowOpenHandler(({ url: destino }) => {
+      abrirFora(destino)
+      return { action: 'deny' }
+    })
+    const conterNoSite = (event: Electron.Event<Electron.WebContentsWillNavigateEventParams>): void => {
+      if (!event.isMainFrame || ehDoApp(event.url, ENDERECO_DO_APP)) return
+      event.preventDefault()
+      abrirFora(event.url)
+    }
+    janela.webContents.on('will-navigate', conterNoSite)
+    janela.webContents.on('will-redirect', conterNoSite)
   })
 
   // A janela só navega pelo site, pela API e pelo login da Microsoft; qualquer
