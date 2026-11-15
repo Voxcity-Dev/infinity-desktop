@@ -26,7 +26,9 @@ import {
 // infinity://). INFINITY_DESKTOP_URL aponta para a homolog ou um preview.
 const ENDERECO_DO_APP = resolverEnderecoDoApp({
   dev: is.dev,
-  override: process.env.INFINITY_DESKTOP_URL,
+  // MAIN_VITE_INFINITY_DESKTOP_URL fixa o endereço no build (instalador de
+  // teste que abre a homolog sem variável no Windows).
+  override: process.env.INFINITY_DESKTOP_URL || import.meta.env.MAIN_VITE_INFINITY_DESKTOP_URL,
 })
 
 // O fundo da janela enquanto o site carrega: o vm-bg-primary do Vox Midnight.
