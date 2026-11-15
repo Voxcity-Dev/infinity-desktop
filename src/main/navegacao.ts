@@ -70,12 +70,20 @@ export function podeAbrirFora(url: string): boolean {
   return !!u && ['http:', 'https:', 'mailto:'].includes(u.protocol)
 }
 
-export type DeepLink = { tipo: 'rota'; rota: string } | { tipo: 'discar'; numero: string }
+export type AcaoDeChamada = 'atender' | 'recusar' | 'abrir'
+
+export type DeepLink =
+  | { tipo: 'rota'; rota: string }
+  | { tipo: 'discar'; numero: string }
+  | { tipo: 'chamada'; acao: AcaoDeChamada }
+
+const ACOES_DE_CHAMADA: readonly AcaoDeChamada[] = ['atender', 'recusar', 'abrir']
 
 /**
  * Formatos aceitos:
  *   infinity://chat/CONVERSA_ID  → /tela-operacao/chat?id=CONVERSA_ID
  *   infinity://call/NUMERO       → discagem no softphone
+ *   infinity://chamada/atender   → atende a chamada que toca (também recusar e abrir)
  *   infinity://dashboard         → /dashboard
  *   infinity://caminho/...?q     → /caminho/...?q (a query vai junto, #32894:
  *                                  os avisos do sino levam a /usuarios?pendencias=<id>)
@@ -94,6 +102,11 @@ export function interpretarDeepLink(url: string): DeepLink | null {
   if (caminho.startsWith('call/')) {
     const numero = decodeURIComponent(caminho.slice(5)).replace(/[^0-9+*#]/g, '')
     return numero ? { tipo: 'discar', numero } : null
+  }
+  // Os botões do aviso de chamada do Windows (aviso-de-chamada.ts, #37265).
+  if (caminho.startsWith('chamada/')) {
+    const acao = caminho.slice(8).replace(/\/$/, '') as AcaoDeChamada
+    return ACOES_DE_CHAMADA.includes(acao) ? { tipo: 'chamada', acao } : null
   }
   if (caminho === 'dashboard' || caminho === 'dashboard/') return { tipo: 'rota', rota: '/dashboard' }
   return { tipo: 'rota', rota: `/${caminho}${u.search}` }
