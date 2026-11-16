@@ -1,6 +1,7 @@
-import { app, ipcMain, Notification, dialog, BrowserWindow } from 'electron'
+import { app, ipcMain, Notification, dialog, BrowserWindow, shell } from 'electron'
 import { writeFile } from 'fs/promises'
 import { soDoApp } from './origem'
+import { salvarAoLado } from './ao-lado'
 
 export function setupIpcHandlers(enderecoDoApp: string): void {
   // --- Native Notifications ---
@@ -56,6 +57,24 @@ export function setupIpcHandlers(enderecoDoApp: string): void {
         return { canceled: false, filePath: result.filePath }
       },
     ),
+  )
+
+  // --- Conversor no computador ---
+  // O arquivo solto na janela converte no storage e o novo nasce ao lado do
+  // original no PC. O preload resolve a pasta pelo arquivo solto; o "Mostrar na
+  // pasta" só abre o que a casca gravou nesta sessão.
+  const gravadosAoLado = new Set<string>()
+  ipcMain.handle(
+    'salvar-ao-lado',
+    soDoApp(enderecoDoApp, (_event, original: unknown, nome: unknown, bytes: unknown) =>
+      salvarAoLado(original, nome, bytes, gravadosAoLado),
+    ),
+  )
+  ipcMain.on(
+    'mostrar-na-pasta',
+    soDoApp(enderecoDoApp, (_event, caminho: unknown) => {
+      if (typeof caminho === 'string' && gravadosAoLado.has(caminho)) shell.showItemInFolder(caminho)
+    }),
   )
 
   // --- Confirm Dialog (native OS) ---
