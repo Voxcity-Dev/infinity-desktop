@@ -6,6 +6,8 @@ import { setupIpcHandlers } from './ipc-handlers'
 import { createTray, updateCallState, updateBadgeCount, destroyTray } from './tray'
 import { setupAutoUpdater } from './updater'
 import { setupStartup } from './startup'
+import { setupAvisoDeChamada, encerrarAvisoDeChamada } from './chamada'
+import { comecaNaBandeja } from './partida'
 import { soDoApp } from './origem'
 import {
   ehAnexoDoChat,
@@ -25,7 +27,9 @@ import {
 // infinity://). INFINITY_DESKTOP_URL aponta para a homolog ou um preview.
 const ENDERECO_DO_APP = resolverEnderecoDoApp({
   dev: is.dev,
-  override: process.env.INFINITY_DESKTOP_URL,
+  // MAIN_VITE_INFINITY_DESKTOP_URL fixa o endereço no build (instalador de
+  // teste que abre a homolog sem variável no Windows).
+  override: process.env.INFINITY_DESKTOP_URL || import.meta.env.MAIN_VITE_INFINITY_DESKTOP_URL,
 })
 
 // O fundo da janela enquanto o site carrega: o vm-bg-primary do Vox Midnight.
@@ -60,6 +64,14 @@ let pendingDeepLink: string | null = null
 // Quadro principal com o front carregado (frontCarregadoDepois, navegacao.ts).
 // Iframe carregando não conta.
 let frontCarregado = false
+// Aberto pelo login do computador: a janela não aparece, mas o site carrega e
+// o ramal registra (partida.ts, #37265). Só a primeira janela; a pessoa abre
+// pela bandeja, pelo atalho ou por um link.
+let comecarNaBandeja = false
+
+// O mesmo appId do electron-builder: sem ele o Windows não liga o aviso de
+// chamada (toast) ao app instalado.
+if (process.platform === 'win32') app.setAppUserModelId('com.voxcity.infinity')
 
 // Register infinity:// protocol as default handler
 if (!is.dev) {
@@ -77,7 +89,16 @@ function handleDeepLink(url: string): void {
   const link = interpretarDeepLink(url)
   if (!link) return
 
+  if (link.tipo === 'chamada') {
+    // Botão do aviso de chamada do Windows. Recusar não traz a janela.
+    encerrarAvisoDeChamada()
+    if (link.acao !== 'recusar') mostrarJanela()
+    if (link.acao === 'atender') mainWindow?.webContents.send('tray-action', 'answer')
+    if (link.acao === 'recusar') mainWindow?.webContents.send('tray-action', 'reject')
+    return
+  }
   if (link.tipo === 'discar') {
+    mostrarJanela()
     mainWindow?.webContents.send('tray-action', `dial:${link.numero}`)
     return
   }
@@ -131,11 +152,19 @@ function createWindow(): void {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Escondida na bandeja a janela segue no ritmo normal: sem isso o
+      // Chromium espaça os timers da página oculta e o toque e o registro do
+      // ramal podem atrasar (#37265).
+      backgroundThrottling: false,
     },
   })
 
   // Show window when ready (avoids white flash)
   mainWindow.on('ready-to-show', () => {
+    if (comecarNaBandeja) {
+      comecarNaBandeja = false
+      return
+    }
     mainWindow?.show()
   })
 
@@ -281,6 +310,9 @@ function registrarIpcDaJanela(): void {
       if (mainWindow) {
         updateCallState(state, mainWindow)
       }
+      // Atendeu, recusou ou caiu: o aviso de chamada do sistema sai junto,
+      // mesmo se o front não pedir (front de antes do #37265).
+      if (state !== 'ringing') encerrarAvisoDeChamada()
     }),
   )
 
@@ -310,12 +342,13 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', (_event, argv) => {
-    mostrarJanela()
-
-    // Windows/Linux: deep link URL comes as last argv argument
-    const deepLinkUrl = argv.find((arg) => arg.startsWith('infinity://'))
+    // Windows/Linux: o link vem no argv. Quem decide se a janela aparece é o
+    // handleDeepLink: o "Recusar" do aviso de chamada não traz a janela.
+    const deepLinkUrl = linkNoArgv(argv)
     if (deepLinkUrl) {
       handleDeepLink(deepLinkUrl)
+    } else {
+      mostrarJanela()
     }
   })
 
@@ -349,8 +382,14 @@ if (!gotTheLock) {
     const linkDaPartida = linkNoArgv(process.argv)
     if (linkDaPartida) handleDeepLink(linkDaPartida)
 
+    comecarNaBandeja = comecaNaBandeja(
+      process.argv,
+      process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin,
+    )
+
     setupIpcHandlers(ENDERECO_DO_APP)
     setupStartup(ENDERECO_DO_APP)
+    setupAvisoDeChamada(ENDERECO_DO_APP, mostrarJanela)
     registrarIpcDaJanela()
     createWindow()
 

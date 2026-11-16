@@ -33,6 +33,11 @@ const electronAPI = {
   setCallState: (state: 'idle' | 'ringing' | 'in-call') =>
     ipcRenderer.send('call-state-changed', state),
 
+  // --- Aviso de chamada do sistema (Windows: Atender e Recusar), #37265 ---
+  avisarChamada: (aviso: { titulo: string; de: string; atender: string; recusar: string }) =>
+    ipcRenderer.send('aviso-de-chamada', aviso),
+  encerrarAvisoDeChamada: () => ipcRenderer.send('fim-do-aviso-de-chamada'),
+
   // --- Auto-Start ---
   getAutoStart: () => ipcRenderer.invoke('get-auto-start') as Promise<boolean>,
   setAutoStart: (enabled: boolean) =>
