@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   decidirNavegacao,
+  ehAnexoDoChat,
   ehDoApp,
   interpretarDeepLink,
   frontCarregadoDepois,
@@ -223,5 +224,24 @@ describe('frontCarregadoDepois (#34766)', () => {
   it('navegação cancelada pela casca (mailto:, tel:, link externo) não segura o link', () => {
     // Só chega o did-start-navigation; não vem did-navigate nem did-finish-load.
     expect(frontCarregadoDepois(true, 'did-start-navigation')).toBe(true)
+  })
+})
+
+describe('ehAnexoDoChat (Card VoxPlan #36028)', () => {
+  const ID = '0f1e0000-0000-4000-8000-000000000006'
+
+  it('o anexo do chat no site do app abre em janela do app', () => {
+    expect(ehAnexoDoChat(`${APP}/chat/anexo/${ID}`, APP)).toBe(true)
+  })
+
+  it.each([
+    ['outro site com o mesmo caminho', `https://outro.com/chat/anexo/${ID}`],
+    ['outra rota do app', `${APP}/tela-operacao/chat`],
+    ['id que não é uuid', `${APP}/chat/anexo/local-1`],
+    ['algo abaixo do id', `${APP}/chat/anexo/${ID}/x`],
+    ['a mídia da mensageria', `https://api-gateway.voxcity.com.br/mensageria/midia/x/contrato.pdf`],
+    ['lixo', 'nao é url'],
+  ])('%s: não', (_, url) => {
+    expect(ehAnexoDoChat(url, APP)).toBe(false)
   })
 })
