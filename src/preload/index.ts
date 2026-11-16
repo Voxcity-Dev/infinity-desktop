@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, webUtils } from 'electron'
 
 // Expose protected APIs to the renderer process via window.electronAPI
 const electronAPI = {
@@ -18,6 +18,33 @@ const electronAPI = {
     defaultName: string,
     filters?: { name: string; extensions: string[] }[],
   ) => ipcRenderer.invoke('save-file', buffer, defaultName, filters),
+
+  // --- Conversor no computador ---
+  // O arquivo solto da pasta do PC tem caminho; o que veio de outro lugar (uma
+  // imagem arrastada de um site, um arquivo montado pela página) não tem.
+  temCaminhoNoComputador: (arquivo: File) => {
+    try {
+      return webUtils.getPathForFile(arquivo) !== ''
+    } catch {
+      return false
+    }
+  },
+  /** Grava o convertido na mesma pasta do original, sem sobrescrever. */
+  salvarAoLado: (original: File, nome: string, bytes: ArrayBuffer) => {
+    let caminho = ''
+    try {
+      caminho = webUtils.getPathForFile(original)
+    } catch {
+      caminho = ''
+    }
+    if (!caminho) return Promise.resolve({ ok: false as const, motivo: 'original' as const })
+    return ipcRenderer.invoke('salvar-ao-lado', caminho, nome, bytes) as Promise<
+      | { ok: true; caminho: string; nome: string }
+      | { ok: false; motivo: 'original' | 'nome' | 'tamanho' | 'gravar' }
+    >
+  },
+  /** Abre a pasta do arquivo que a casca acabou de gravar, com ele selecionado. */
+  mostrarNaPasta: (caminho: string) => ipcRenderer.send('mostrar-na-pasta', caminho),
 
   // --- Confirm Dialog ---
   showConfirmDialog: (title: string, message: string) =>
