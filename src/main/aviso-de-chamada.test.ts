@@ -37,7 +37,7 @@ describe('montarToastDeChamada (#37265)', () => {
     expect(toast).toContain('<audio silent="true"/>')
     expect(toast).toContain(`content="Atender" arguments="${LINK_ATENDER}?f=f1" activationType="protocol"`)
     expect(toast).toContain(`content="Recusar" arguments="${LINK_RECUSAR}?f=f1" activationType="protocol"`)
-    expect(toast).toContain(`launch="${LINK_ABRIR}"`)
+    expect(toast).toContain(`launch="${LINK_ABRIR}?f=f1"`)
   })
 
   it('o nome de quem liga não quebra o XML', () => {

@@ -87,12 +87,18 @@ function mostrarJanela(): void {
 
 function handleDeepLink(url: string): void {
   const link = interpretarDeepLink(url)
-  if (!link) return
+  if (!link) {
+    mostrarJanela()
+    return
+  }
 
   if (link.tipo === 'chamada') {
     // Botão do aviso de chamada do Windows. Recusar não traz a janela.
-    if (link.acao !== 'abrir' && !fichaDoAvisoConfere(link.ficha)) {
+    if (!fichaDoAvisoConfere(link.ficha)) {
+      // Sem a ficha do aviso aberto (link de página, e-mail ou outro app): no
+      // máximo traz a janela; não mexe na chamada nem fecha o aviso.
       console.warn('[deep-link] ação de chamada sem a ficha do aviso aberto: ignorada')
+      if (link.acao === 'abrir') mostrarJanela()
       return
     }
     encerrarAvisoDeChamada()

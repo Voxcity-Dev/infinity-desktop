@@ -17,6 +17,9 @@ export const EXTENSOES_DO_CONVERSOR = new Set([
   'zip', 'tar', 'gz', 'gzip',
 ])
 
+/** Inicializar do Windows, autostart do Linux e LaunchAgents do macOS. */
+const PASTA_DE_LOGIN = /start menu[\\/]programs[\\/]startup|[\\/]autostart([\\/]|$)|[\\/]launchagents([\\/]|$)/i
+
 /** Teto do que a casca grava de uma vez (o anexo entra com até 50 MB; o vídeo pode crescer). */
 export const TETO_AO_LADO = 500 * 1024 * 1024
 
@@ -70,6 +73,8 @@ export async function salvarAoLado(
   gravados: Set<string>,
 ): Promise<ResultadoAoLado> {
   if (typeof original !== 'string' || !isAbsolute(original)) return { ok: false, motivo: 'original' }
+  // Pasta que o sistema abre sozinho no login: nada nasce ali.
+  if (PASTA_DE_LOGIN.test(dirname(original))) return { ok: false, motivo: 'original' }
   const doOriginal = await stat(original).catch(() => null)
   if (!doOriginal?.isFile()) return { ok: false, motivo: 'original' }
   const seguro = nomeSeguro(nome)

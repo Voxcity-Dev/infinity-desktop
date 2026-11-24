@@ -49,7 +49,7 @@ export function montarToastDeChamada(aviso: AvisoDeChamada, ficha: string): stri
   // A ficha de uso único vai nos botões: só o toast aberto agora atende ou recusa.
   const comFicha = (link: string) => `${link}?f=${encodeURIComponent(ficha)}`
   return [
-    `<toast scenario="incomingCall" launch="${LINK_ABRIR}" activationType="protocol">`,
+    `<toast scenario="incomingCall" launch="${xml(comFicha(LINK_ABRIR))}" activationType="protocol">`,
     '<visual><binding template="ToastGeneric">',
     `<text>${xml(aviso.titulo)}</text>`,
     `<text>${xml(aviso.de)}</text>`,

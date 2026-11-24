@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -70,6 +70,16 @@ describe('salvarAoLado', () => {
     expect(r).toEqual({ ok: false, motivo })
     expect(gravados.size).toBe(0)
     expect(await readdir(pasta)).toEqual(['foto.heic'])
+  })
+
+  it('recusa a pasta que o sistema abre no login', async () => {
+    const startup = join(pasta, 'Start Menu', 'Programs', 'Startup')
+    await mkdir(startup, { recursive: true })
+    await writeFile(join(startup, 'foto.heic'), 'heic')
+    expect(await salvarAoLado(join(startup, 'foto.heic'), 'foto.png', new ArrayBuffer(3), new Set())).toEqual({
+      ok: false,
+      motivo: 'original',
+    })
   })
 
   it('recusa bytes vazios', async () => {
