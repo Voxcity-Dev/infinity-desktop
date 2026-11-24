@@ -1,4 +1,4 @@
-// O aviso de chamada do sistema (Card VoxPlan #37265): no Windows é o toast de
+// O aviso de chamada do sistema: no Windows é o toast de
 // chamada recebida, o mesmo tipo do Teams, que fica na tela enquanto toca e tem
 // Atender e Recusar. Os botões voltam ao app por infinity://chamada/<ação>
 // (second-instance), então funcionam com a janela escondida na bandeja.
@@ -45,7 +45,9 @@ export const LINK_ABRIR = 'infinity://chamada/abrir'
  * até a pessoa agir (ou a casca fechar quando a chamada acaba) e põe os botões
  * grandes. Sem som: o site já toca o toque do Infinity.
  */
-export function montarToastDeChamada(aviso: AvisoDeChamada): string {
+export function montarToastDeChamada(aviso: AvisoDeChamada, ficha: string): string {
+  // A ficha de uso único vai nos botões: só o toast aberto agora atende ou recusa.
+  const comFicha = (link: string) => `${link}?f=${encodeURIComponent(ficha)}`
   return [
     `<toast scenario="incomingCall" launch="${LINK_ABRIR}" activationType="protocol">`,
     '<visual><binding template="ToastGeneric">',
@@ -53,8 +55,8 @@ export function montarToastDeChamada(aviso: AvisoDeChamada): string {
     `<text>${xml(aviso.de)}</text>`,
     '</binding></visual>',
     '<actions>',
-    `<action content="${xml(aviso.atender)}" arguments="${LINK_ATENDER}" activationType="protocol"/>`,
-    `<action content="${xml(aviso.recusar)}" arguments="${LINK_RECUSAR}" activationType="protocol"/>`,
+    `<action content="${xml(aviso.atender)}" arguments="${xml(comFicha(LINK_ATENDER))}" activationType="protocol"/>`,
+    `<action content="${xml(aviso.recusar)}" arguments="${xml(comFicha(LINK_RECUSAR))}" activationType="protocol"/>`,
     '</actions>',
     '<audio silent="true"/>',
     '</toast>',

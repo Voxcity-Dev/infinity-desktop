@@ -60,7 +60,7 @@ const electronAPI = {
   setCallState: (state: 'idle' | 'ringing' | 'in-call') =>
     ipcRenderer.send('call-state-changed', state),
 
-  // --- Aviso de chamada do sistema (Windows: Atender e Recusar), #37265 ---
+  // --- Aviso de chamada do sistema (Windows: Atender e Recusar) ---
   avisarChamada: (aviso: { titulo: string; de: string; atender: string; recusar: string }) =>
     ipcRenderer.send('aviso-de-chamada', aviso),
   encerrarAvisoDeChamada: () => ipcRenderer.send('fim-do-aviso-de-chamada'),

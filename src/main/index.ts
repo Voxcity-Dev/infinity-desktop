@@ -6,9 +6,9 @@ import { setupIpcHandlers } from './ipc-handlers'
 import { createTray, updateCallState, updateBadgeCount, destroyTray } from './tray'
 import { setupAutoUpdater } from './updater'
 import { setupStartup } from './startup'
-import { setupAvisoDeChamada, encerrarAvisoDeChamada } from './chamada'
+import { setupAvisoDeChamada, encerrarAvisoDeChamada, fichaDoAvisoConfere } from './chamada'
 import { comecaNaBandeja } from './partida'
-import { soDoApp } from './origem'
+import { soDoApp, semPonte } from './origem'
 import {
   ehAnexoDoChat,
   ehDoApp,
@@ -65,7 +65,7 @@ let pendingDeepLink: string | null = null
 // Iframe carregando não conta.
 let frontCarregado = false
 // Aberto pelo login do computador: a janela não aparece, mas o site carrega e
-// o ramal registra (partida.ts, #37265). Só a primeira janela; a pessoa abre
+// o ramal registra (partida.ts). Só a primeira janela; a pessoa abre
 // pela bandeja, pelo atalho ou por um link.
 let comecarNaBandeja = false
 
@@ -91,6 +91,10 @@ function handleDeepLink(url: string): void {
 
   if (link.tipo === 'chamada') {
     // Botão do aviso de chamada do Windows. Recusar não traz a janela.
+    if (link.acao !== 'abrir' && !fichaDoAvisoConfere(link.ficha)) {
+      console.warn('[deep-link] ação de chamada sem a ficha do aviso aberto: ignorada')
+      return
+    }
     encerrarAvisoDeChamada()
     if (link.acao !== 'recusar') mostrarJanela()
     if (link.acao === 'atender') mainWindow?.webContents.send('tray-action', 'answer')
@@ -154,7 +158,7 @@ function createWindow(): void {
       sandbox: true,
       // Escondida na bandeja a janela segue no ritmo normal: sem isso o
       // Chromium espaça os timers da página oculta e o toque e o registro do
-      // ramal podem atrasar (#37265).
+      // ramal podem atrasar.
       backgroundThrottling: false,
     },
   })
@@ -218,7 +222,7 @@ function createWindow(): void {
       }
     }
 
-    // O anexo do chat em outra janela, com a sessão do app (Card VoxPlan #36028).
+    // O anexo do chat em outra janela, com a sessão do app.
     if (ehAnexoDoChat(url, ENDERECO_DO_APP)) {
       return {
         action: 'allow',
@@ -251,12 +255,15 @@ function createWindow(): void {
   // vão para o navegador do sistema, nunca para outra janela do Electron.
   mainWindow.webContents.on('did-create-window', (janela, { url }) => {
     if (!ehAnexoDoChat(url, ENDERECO_DO_APP)) return
+    // A janela filha herda o preload: a ponte existe nela, mas o main recusa
+    // tudo que vier daqui (não é um segundo app com ramal e bandeja).
+    semPonte(janela.webContents)
     janela.webContents.setWindowOpenHandler(({ url: destino }) => {
       abrirFora(destino)
       return { action: 'deny' }
     })
     const conterNoSite = (event: Electron.Event<Electron.WebContentsWillNavigateEventParams>): void => {
-      if (!event.isMainFrame || ehDoApp(event.url, ENDERECO_DO_APP)) return
+      if (!event.isMainFrame || ehAnexoDoChat(event.url, ENDERECO_DO_APP)) return
       event.preventDefault()
       abrirFora(event.url)
     }
@@ -311,7 +318,7 @@ function registrarIpcDaJanela(): void {
         updateCallState(state, mainWindow)
       }
       // Atendeu, recusou ou caiu: o aviso de chamada do sistema sai junto,
-      // mesmo se o front não pedir (front de antes do #37265).
+      // mesmo se o front não pedir (front de antes do aviso de chamada).
       if (state !== 'ringing') encerrarAvisoDeChamada()
     }),
   )

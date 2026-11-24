@@ -1,5 +1,5 @@
 // Regras puras de como o app começa: abrir junto com o computador e começar
-// escondido na bandeja (Card VoxPlan #37265). Sem import do Electron para ser
+// escondido na bandeja. Sem import do Electron para ser
 // testável.
 
 /** Argumento que o Windows passa ao abrir o app no login: começa na bandeja. */

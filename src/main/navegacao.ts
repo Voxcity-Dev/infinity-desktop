@@ -35,7 +35,7 @@ export function resolverEnderecoDoApp(opcoes: { dev: boolean; override?: string 
   return url.origin
 }
 
-// O anexo de uma conversa aberto em outra aba (Card VoxPlan #36028): só o id
+// O anexo de uma conversa aberto em outra aba: só o id
 // inteiro, nada abaixo dele.
 const ANEXO_DO_CHAT = /^\/chat\/anexo\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -89,7 +89,7 @@ export type AcaoDeChamada = 'atender' | 'recusar' | 'abrir'
 export type DeepLink =
   | { tipo: 'rota'; rota: string }
   | { tipo: 'discar'; numero: string }
-  | { tipo: 'chamada'; acao: AcaoDeChamada }
+  | { tipo: 'chamada'; acao: AcaoDeChamada; ficha?: string }
 
 const ACOES_DE_CHAMADA: readonly AcaoDeChamada[] = ['atender', 'recusar', 'abrir']
 
@@ -117,10 +117,12 @@ export function interpretarDeepLink(url: string): DeepLink | null {
     const numero = decodeURIComponent(caminho.slice(5)).replace(/[^0-9+*#]/g, '')
     return numero ? { tipo: 'discar', numero } : null
   }
-  // Os botões do aviso de chamada do Windows (aviso-de-chamada.ts, #37265).
+  // Os botões do aviso de chamada do Windows (aviso-de-chamada.ts).
   if (caminho.startsWith('chamada/')) {
     const acao = caminho.slice(8).replace(/\/$/, '') as AcaoDeChamada
-    return ACOES_DE_CHAMADA.includes(acao) ? { tipo: 'chamada', acao } : null
+    if (!ACOES_DE_CHAMADA.includes(acao)) return null
+    const ficha = u.searchParams.get('f')
+    return ficha ? { tipo: 'chamada', acao, ficha } : { tipo: 'chamada', acao }
   }
   if (caminho === 'dashboard' || caminho === 'dashboard/') return { tipo: 'rota', rota: '/dashboard' }
   return { tipo: 'rota', rota: `/${caminho}${u.search}` }

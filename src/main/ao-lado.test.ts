@@ -22,6 +22,8 @@ describe('nomeSeguro', () => {
     ['oculto', '.bashrc.txt'],
     ['ponto no fim', 'foto.png.'],
     ['nome reservado', 'CON.png'],
+    ['nome reservado com duas extensões', 'CON.tar.gz'],
+    ['página', 'pagina.html'],
     ['vazio', '   '],
     ['não texto', 42],
   ])('recusa %s', (_caso, nome) => expect(nomeSeguro(nome)).toBeNull())

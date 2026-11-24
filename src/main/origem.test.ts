@@ -1,6 +1,6 @@
 import type { IpcMainEvent } from 'electron'
 import { describe, expect, it, vi } from 'vitest'
-import { soDoApp } from './origem'
+import { semPonte, soDoApp } from './origem'
 
 const APP = 'https://infinity.voxcity.com.br'
 
@@ -24,6 +24,20 @@ describe('soDoApp', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     expect(soDoApp(APP, handler)(evento(url))).toBeUndefined()
     expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('semPonte', () => {
+  it('a janela sem ponte não fala pelo main, mesmo no site do app', () => {
+    const fechar: Array<() => void> = []
+    semPonte({ id: 77, once: (_e: 'destroyed', cb: () => void) => fechar.push(cb) })
+    const handler = vi.fn(() => 'ok')
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const daJanela = { senderFrame: { url: `${APP}/anexo` }, sender: { id: 77 } } as unknown as IpcMainEvent
+    expect(soDoApp(APP, handler)(daJanela)).toBeUndefined()
+    expect(handler).not.toHaveBeenCalled()
+    fechar.forEach((f) => f())
+    expect(soDoApp(APP, handler)(daJanela)).toBe('ok')
   })
 })
 

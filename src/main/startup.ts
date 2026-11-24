@@ -10,7 +10,7 @@ import {
   type PreferenciasDaCasca,
 } from './partida'
 
-// Abrir junto com o computador (Card VoxPlan #37265): vem ligado de fábrica e
+// Abrir junto com o computador: vem ligado de fábrica e
 // abre escondido na bandeja, com o site carregado e o ramal registrado. O
 // interruptor fica no Editar perfil do front (aba Aplicativos).
 

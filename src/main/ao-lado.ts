@@ -10,11 +10,11 @@ import { basename, dirname, extname, isAbsolute, join } from 'path'
 
 /** O que o conversor do storage devolve (formatos, ferramentas e compactados). */
 export const EXTENSOES_DO_CONVERSOR = new Set([
-  'png', 'jpg', 'jpeg', 'webp', 'tiff', 'tif', 'gif', 'heic', 'avif', 'bmp',
-  'pdf', 'docx', 'txt', 'odt', 'rtf', 'html', 'md',
-  'mp4', 'mov', 'mkv', 'webm',
-  'm4a', 'mp3', 'wav', 'flac', 'ogg', 'opus',
-  'zip', 'tar', 'gz', 'gzip', 'tgz',
+  'png', 'jpg', 'jpeg', 'webp', 'tiff', 'gif',
+  'pdf', 'docx', 'txt',
+  'mp4', 'mov', 'mkv',
+  'm4a', 'mp3', 'wav', 'flac',
+  'zip', 'tar', 'gz', 'gzip',
 ])
 
 /** Teto do que a casca grava de uma vez (o anexo entra com até 50 MB; o vídeo pode crescer). */
@@ -35,7 +35,7 @@ export function nomeSeguro(nome: unknown): string | null {
   const extensao = extname(limpo).slice(1).toLowerCase()
   if (!EXTENSOES_DO_CONVERSOR.has(extensao)) return null
   // Nome reservado do Windows (CON, NUL, COM1…): grava em lugar nenhum.
-  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(limpo.slice(0, limpo.length - extensao.length - 1))) {
+  if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(limpo.split('.')[0].trim())) {
     return null
   }
   return limpo
