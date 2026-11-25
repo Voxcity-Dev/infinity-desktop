@@ -129,21 +129,34 @@ describe('podeAbrirFora', () => {
 describe('ehLinkDoRemote', () => {
   const UUID = '3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b'
   const TOKEN = `ric_${'a'.repeat(43)}`
+  const PC = '482913057'
   it.each([
-    [`infinity-remote://connect/${UUID}`, true],
+    [`infinity-remote://connect/${PC}?pedido=${UUID}`, true],
+    [`infinity-remote://connect/123456?pedido=${UUID}`, true],
     [`infinity-remote://convite/${TOKEN}`, true],
+    // o formato antigo, com o pedido no lugar do código: o programa não abre
+    [`infinity-remote://connect/${UUID}`, false],
+    [`infinity-remote://connect/${PC}`, false],
+    [`infinity-remote://connect/${PC}?pedido=${UUID}&password=123`, false],
+    [`infinity-remote://connect/${PC}?pedido=${UUID}&key=abc`, false],
+    [`infinity-remote://connect/${PC}?password=123&pedido=${UUID}`, false],
+    [`infinity-remote://connect/${PC}?pedido=nao-e-uuid`, false],
+    [`infinity-remote://connect/12345?pedido=${UUID}`, false],
+    [`infinity-remote://connect/1234567890123?pedido=${UUID}`, false],
+    [`infinity-remote://connect/48291305a?pedido=${UUID}`, false],
+    [`infinity-remote://connect/${PC}/r?pedido=${UUID}`, false],
     [`infinity-remote://connect/${UUID}?password=123`, false],
     [`infinity-remote://config/${UUID}`, false],
     ['infinity-remote://connect/nao-e-uuid', false],
     [`infinity-remote://convite/${TOKEN}x`, false],
-    [`rustdesk://connect/${UUID}`, false],
+    [`rustdesk://connect/${PC}?pedido=${UUID}`, false],
     [`https://infinity.voxcity.com.br/r/${TOKEN}`, false],
   ])('%s → %s', (url, esperado) => {
     expect(ehLinkDoRemote(url)).toBe(esperado)
   })
 
   it('não entra no que a casca manda para fora sozinha', () => {
-    expect(podeAbrirFora(`infinity-remote://connect/${UUID}`)).toBe(false)
+    expect(podeAbrirFora(`infinity-remote://connect/${PC}?pedido=${UUID}`)).toBe(false)
   })
 })
 
