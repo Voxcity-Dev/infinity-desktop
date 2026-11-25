@@ -8,6 +8,7 @@ import {
   linkNoArgv,
   podeEntregarLink,
   podeAbrirFora,
+  ehLinkDoRemote,
   resolverEnderecoDoApp,
 } from './navegacao'
 
@@ -122,6 +123,27 @@ describe('podeAbrirFora', () => {
     ['ms-msdt:/id', false],
   ])('%s → %s', (url, esperado) => {
     expect(podeAbrirFora(url)).toBe(esperado)
+  })
+})
+
+describe('ehLinkDoRemote', () => {
+  const UUID = '3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b'
+  const TOKEN = `ric_${'a'.repeat(43)}`
+  it.each([
+    [`infinity-remote://connect/${UUID}`, true],
+    [`infinity-remote://convite/${TOKEN}`, true],
+    [`infinity-remote://connect/${UUID}?password=123`, false],
+    [`infinity-remote://config/${UUID}`, false],
+    ['infinity-remote://connect/nao-e-uuid', false],
+    [`infinity-remote://convite/${TOKEN}x`, false],
+    [`rustdesk://connect/${UUID}`, false],
+    [`https://infinity.voxcity.com.br/r/${TOKEN}`, false],
+  ])('%s → %s', (url, esperado) => {
+    expect(ehLinkDoRemote(url)).toBe(esperado)
+  })
+
+  it('não entra no que a casca manda para fora sozinha', () => {
+    expect(podeAbrirFora(`infinity-remote://connect/${UUID}`)).toBe(false)
   })
 })
 

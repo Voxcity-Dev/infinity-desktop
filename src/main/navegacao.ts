@@ -86,6 +86,19 @@ export function podeAbrirFora(url: string): boolean {
 
 export type AcaoDeChamada = 'atender' | 'recusar' | 'abrir'
 
+// O programa do técnico (Infinity Remote): o front leva a janela a
+// infinity-remote://connect/<pedidoId> (botão do cartão no chat) ou
+// infinity-remote://convite/<token> (página /r/:token). Só esses dois formatos
+// exatos, sem query: o esquema do RustDesk também aceita config/ e senha, que
+// reconfigurariam o programa do técnico.
+const LINK_DO_REMOTE =
+  /^infinity-remote:\/\/(connect\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|convite\/ric_[A-Za-z0-9_-]{43})$/i
+
+/** A navegação da janela que deve abrir o Infinity Remote instalado. */
+export function ehLinkDoRemote(url: string): boolean {
+  return LINK_DO_REMOTE.test(url)
+}
+
 export type DeepLink =
   | { tipo: 'rota'; rota: string }
   | { tipo: 'discar'; numero: string }

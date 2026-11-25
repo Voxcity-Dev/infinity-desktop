@@ -17,6 +17,7 @@ import {
   linkNoArgv,
   podeEntregarLink,
   podeAbrirFora,
+  ehLinkDoRemote,
   decidirNavegacao,
   resolverEnderecoDoApp,
 } from './navegacao'
@@ -289,7 +290,10 @@ function createWindow(): void {
     emLogin = decisao.emLogin
     if (decisao.permitir) return
     event.preventDefault()
-    abrirFora(event.url)
+    // O botão "Abrir no Infinity Remote" do chat navega para o esquema do
+    // programa: sem isto a casca cancelava e o clique não fazia nada.
+    if (ehLinkDoRemote(event.url)) shell.openExternal(event.url).catch(() => {})
+    else abrirFora(event.url)
   }
   mainWindow.webContents.on('will-navigate', conterNavegacao)
   mainWindow.webContents.on('will-redirect', conterNavegacao)
