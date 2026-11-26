@@ -92,13 +92,28 @@ export type AcaoDeChamada = 'atender' | 'recusar' | 'abrir'
 // infinity-remote://convite/<token> (página /r/:token). Só esses dois formatos
 // exatos: código só de dígitos, pedido só uuid e nenhum outro parâmetro. O
 // esquema do RustDesk também aceita config/, senha e key, que reconfigurariam o
-// programa do técnico.
+// programa do técnico. Sem /i: o front gera tudo minúsculo (uuid em [0-9a-f]) e
+// o token do convite é o do core, ric_ + 32 bytes em base64url (43 caracteres).
 const LINK_DO_REMOTE =
-  /^infinity-remote:\/\/(connect\/\d{6,12}\?pedido=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|convite\/ric_[A-Za-z0-9_-]{43})$/i
+  /^infinity-remote:\/\/(connect\/\d{6,12}\?pedido=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|convite\/ric_[A-Za-z0-9_-]{43})$/
 
 /** A navegação da janela que deve abrir o Infinity Remote instalado. */
 export function ehLinkDoRemote(url: string): boolean {
   return LINK_DO_REMOTE.test(url)
+}
+
+/**
+ * A janela principal só abre o programa quando quem navega é o site do app: a
+ * página atual é da mesma origem e a janela não está no login externo (ali
+ * qualquer https passa, e uma página de fora poderia disparar o esquema).
+ */
+export function podeAbrirORemote(
+  destino: string,
+  paginaAtual: string,
+  enderecoDoApp: string,
+  emLogin: boolean,
+): boolean {
+  return !emLogin && ehDoApp(paginaAtual, enderecoDoApp) && ehLinkDoRemote(destino)
 }
 
 export type DeepLink =

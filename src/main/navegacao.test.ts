@@ -9,6 +9,7 @@ import {
   podeEntregarLink,
   podeAbrirFora,
   ehLinkDoRemote,
+  podeAbrirORemote,
   resolverEnderecoDoApp,
 } from './navegacao'
 
@@ -151,8 +152,50 @@ describe('ehLinkDoRemote', () => {
     [`infinity-remote://convite/${TOKEN}x`, false],
     [`rustdesk://connect/${PC}?pedido=${UUID}`, false],
     [`https://infinity.voxcity.com.br/r/${TOKEN}`, false],
+    // lixo entre "pedido=" e o uuid, ou o pedido repetido
+    [`infinity-remote://connect/${PC}?pedido=x&password=1&pedido=${UUID}`, false],
+    [`infinity-remote://connect/${PC}?pedido=${UUID}&pedido=${UUID}`, false],
+    [`infinity-remote://connect/${PC}?pedido=x${UUID}`, false],
+    // token do convite com caractere fora do base64url, curto ou com padding
+    [`infinity-remote://convite/ric_${'a'.repeat(42)}+`, false],
+    [`infinity-remote://convite/ric_${'a'.repeat(42)}`, false],
+    [`infinity-remote://convite/ric_${'a'.repeat(42)}=`, false],
+    // o token do core tem maiúsculas, - e _ do base64url
+    [`infinity-remote://convite/ric_${'Az09-_'.repeat(7)}Q`, true],
+    // maiúsculas fora do token: recusadas (sem /i)
+    [`INFINITY-REMOTE://connect/${PC}?pedido=${UUID}`, false],
+    [`infinity-remote://CONNECT/${PC}?pedido=${UUID}`, false],
+    [`infinity-remote://connect/${PC}?PEDIDO=${UUID}`, false],
+    [`infinity-remote://connect/${PC}?pedido=${UUID.toUpperCase()}`, false],
+    [`infinity-remote://CONVITE/${TOKEN}`, false],
+    [`infinity-remote://convite/RIC_${'a'.repeat(43)}`, false],
   ])('%s → %s', (url, esperado) => {
     expect(ehLinkDoRemote(url)).toBe(esperado)
+  })
+
+  describe('podeAbrirORemote', () => {
+    const LINK = `infinity-remote://connect/${PC}?pedido=${UUID}`
+    const PAGINA = `${APP}/tela-operacao/chat?id=1`
+    it('abre quando a página atual é do app e fora do login', () => {
+      expect(podeAbrirORemote(LINK, PAGINA, APP, false)).toBe(true)
+      expect(podeAbrirORemote(`infinity-remote://convite/${TOKEN}`, PAGINA, APP, false)).toBe(true)
+    })
+    it.each([
+      ['página de outro site', 'https://evil.example.com/x'],
+      ['login da Microsoft', 'https://login.microsoftonline.com/common/oauth2'],
+      ['subdomínio do app', 'https://bucket.voxcity.com.br/arquivo.html'],
+      ['http do mesmo host', 'http://infinity.voxcity.com.br/'],
+      ['página vazia', ''],
+      ['página sem conexão', 'file:///app/renderer/index.html'],
+    ])('recusa com a %s', (_nome, pagina) => {
+      expect(podeAbrirORemote(LINK, pagina, APP, false)).toBe(false)
+    })
+    it('recusa no modo login, mesmo com a página do app', () => {
+      expect(podeAbrirORemote(LINK, PAGINA, APP, true)).toBe(false)
+    })
+    it('recusa link fora do formato, mesmo com a página do app', () => {
+      expect(podeAbrirORemote(`infinity-remote://config/${UUID}`, PAGINA, APP, false)).toBe(false)
+    })
   })
 
   it('não entra no que a casca manda para fora sozinha', () => {

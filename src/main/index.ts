@@ -17,7 +17,7 @@ import {
   linkNoArgv,
   podeEntregarLink,
   podeAbrirFora,
-  ehLinkDoRemote,
+  podeAbrirORemote,
   decidirNavegacao,
   resolverEnderecoDoApp,
 } from './navegacao'
@@ -286,14 +286,19 @@ function createWindow(): void {
     event: Electron.Event<Electron.WebContentsWillNavigateEventParams>,
   ): void => {
     if (!event.isMainFrame || event.url.startsWith(URL_SEM_CONEXAO)) return
+    const estavaEmLogin = emLogin
     const decisao = decidirNavegacao(event.url, ENDERECO_DO_APP, emLogin)
     emLogin = decisao.emLogin
     if (decisao.permitir) return
     event.preventDefault()
     // O botão "Abrir no Infinity Remote" do chat navega para o esquema do
-    // programa: sem isto a casca cancelava e o clique não fazia nada.
-    if (ehLinkDoRemote(event.url)) shell.openExternal(event.url).catch(() => {})
-    else abrirFora(event.url)
+    // programa: sem isto a casca cancelava e o clique não fazia nada. Só abre
+    // se a página atual é do app e fora do login externo (vale também para o
+    // will-redirect); recusado, o link morre aqui (o esquema não vai para fora).
+    const paginaAtual = mainWindow?.webContents.getURL() ?? ''
+    if (podeAbrirORemote(event.url, paginaAtual, ENDERECO_DO_APP, estavaEmLogin)) {
+      shell.openExternal(event.url).catch(() => {})
+    } else abrirFora(event.url)
   }
   mainWindow.webContents.on('will-navigate', conterNavegacao)
   mainWindow.webContents.on('will-redirect', conterNavegacao)
